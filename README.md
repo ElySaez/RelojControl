@@ -46,7 +46,7 @@ Sistema web para el control y gestión de horas extras de empleados. Permite reg
 
 1. Clona el repositorio:
 ```bash
-git clone [URL_del_repositorio]
+git clone https://github.com/ElySaez/RelojControl
 ```
 
 2. Navega al directorio del proyecto:
