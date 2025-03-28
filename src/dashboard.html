@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Horas Extras</title>
+    <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+</head>
+<body>
+    <div class="user-info">
+        <span id="currentUserDisplay"></span>
+        <button onclick="logout()" class="btn-logout">
+            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+        </button>
+    </div>
+
+    <div class="container">
+        <h1><i class="fas fa-clock"></i> Sistema de Horas Extras</h1>
+        
+        <div class="form-group">
+            <label for="idInput">ID:</label>
+            <input type="text" id="idInput" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="monthInput">Mes:</label>
+            <input type="number" id="monthInput" min="1" max="12" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="yearInput">Año:</label>
+            <input type="number" id="yearInput" class="form-control" required>
+        </div>
+        
+        <div class="button-group">
+            <button onclick="filterData()" class="btn btn-primary">
+                <i class="fas fa-search"></i> Generar Reporte
+            </button>
+
+            <button onclick="redirectToSpecial()" class="btn btn-secondary">
+                <i class="fas fa-exchange-alt"></i> Ir a reportes Especiales
+            </button>
+        </div>
+        
+        <div id="output"></div>
+        
+        <div id="resumen-container"></div>
+        
+        <div class="button-group download-buttons">
+            <button id="downloadPdfBtn" onclick="downloadPDF()" class="btn btn-success" style="display: none;">
+                <i class="fas fa-file-pdf"></i> Descargar PDF
+            </button>
+            
+            <button id="downloadExcelBtn" onclick="downloadExcel()" class="btn btn-success" style="display: none;">
+                <i class="fas fa-file-excel"></i> Descargar Excel
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Verificar si hay una sesión activa, si no, redirigir al login
+        if (!sessionStorage.getItem('currentUser')) {
+            window.location.href = '../index.html';
+        } else {
+            // Mostrar información del usuario
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            document.getElementById('currentUserDisplay').innerHTML = `
+                <i class="fas fa-user"></i> ${currentUser.username} (${currentUser.role})
+            `;
+        }
+
+        function logout() {
+            sessionStorage.removeItem('currentUser');
+            window.location.href = '../index.html';
+        }
+
+        function redirectToSpecial() {
+            window.location.href = "hoemhe.html";
+        }
+    </script>
+    <script src="./js/script.js"></script>
+</body>
+</html> 
