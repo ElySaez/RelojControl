@@ -70,105 +70,137 @@ function esFeriado(fecha) {
     // Verificar si es fin de semana o está en la lista de feriados
     return day === 0 || day === 6 || feriados.includes(formattedDate);
 }
-function calcularHorasExtras(startTime, endTime) {
-    const startOfWorkDay = new Date(startTime);
-    startOfWorkDay.setHours(8, 33, 0, 0);
+function calcularHorasExtras(entrada, salida) {
+    if (!entrada || !salida || entrada.getTime() === salida.getTime() || salida <= entrada) {
+        return {
+            diurnalSeconds: 0,
+            nocturnalSeconds: 0,
+            alertMessage: `<div class="alert alert-error"><i class="fas fa-exclamation-circle"></i><span>Error: ${!entrada ? 'Falta marca de entrada' : !salida ? 'Falta marca de salida' : 'Marcas inválidas'}</span></div>`
+        };
+    }
 
-    const endOfWorkDay = new Date(startTime);
-    endOfWorkDay.setHours(17, 33, 0, 0);
+    // Si es día no laborable, todas las horas se calculan al 50%
+    if (esFeriado(entrada)) {
+        const diffSeconds = Math.floor((salida - entrada) / 1000);
+        return {
+            diurnalSeconds: 0,
+            nocturnalSeconds: diffSeconds,
+            alertMessage: `<div class="alert alert-info"><i class="fas fa-info-circle"></i><span>Día no laborable - Todas las horas se calculan al 50%</span></div>`
+        };
+    }
 
-    const startOfDiurnalOvertime = new Date(startTime);
-    startOfDiurnalOvertime.setHours(17, 34, 0, 0);
+    // Fecha a partir de la cual se aplica la flexibilidad horaria
+    const fechaInicio = new Date('2025-03-03');
+    const aplicarFlexibilidad = entrada >= fechaInicio;
 
-    const endOfDiurnalOvertime = new Date(startTime);
-    endOfDiurnalOvertime.setHours(20, 59, 59, 999);
+    let horaSalidaEsperada = null;
+    let horaEntradaEsperada = null;
+    let mensajeFlexibilidad = '';
 
-    const startOfNocturnalOvertime = new Date(startTime);
-    startOfNocturnalOvertime.setHours(21, 0, 0, 0);
+    // Verificar si la entrada está entre las 6:00 y 7:59
+    const horaEntrada = entrada.getHours();
+    const minutoEntrada = entrada.getMinutes();
+    const entradaTemprana = horaEntrada >= 6 && horaEntrada < 8;
 
-    let diurnalOvertimeSeconds = 0;
-    let nocturnalOvertimeSeconds = 0;
-    let workSeconds = 0;
-    let alertMessage = "";
-    let alertType = ""; // Nuevo: tipo de alerta
-
-    // Condición específica para el 17 de septiembre
-    const isSept17 = startTime.getMonth() === 8 && startTime.getDate() === 17;
-    
-    if (isSept17) {
-        const startOfDiurnalSept17 = new Date(startTime);
-        startOfDiurnalSept17.setHours(12, 0, 0, 0);
-
-        if (startTime < startOfDiurnalSept17) {
-            startTime = startOfDiurnalSept17;
-        }
+    if (aplicarFlexibilidad) {
+        // Definir los límites de la flexibilidad horaria
+        const horaEntradaMinima = new Date(entrada);
+        horaEntradaMinima.setHours(8, 0, 0, 0);
         
-        if (endTime <= endOfDiurnalOvertime) {
-            diurnalOvertimeSeconds = (endTime - startTime) / 1000;
+        const horaEntradaMaxima = new Date(entrada);
+        horaEntradaMaxima.setHours(9, 0, 0, 0);
+
+        if (entradaTemprana) {
+            // Si entró entre 6:00 y 7:59, usar las 8:00 como hora de entrada
+            horaEntradaEsperada = new Date(entrada);
+            horaEntradaEsperada.setHours(8, 0, 0, 0);
+            horaSalidaEsperada = new Date(entrada);
+            horaSalidaEsperada.setHours(17, 0, 0, 0);
+            mensajeFlexibilidad = `<div class="alert alert-info"><i class="fas fa-clock"></i><span>Entrada temprana. Se considera desde las 08:00. Hora de salida esperada: 17:00</span></div>`;
         } else {
-            diurnalOvertimeSeconds = (endOfDiurnalOvertime - startTime) / 1000;
-            nocturnalOvertimeSeconds = (endTime - startOfNocturnalOvertime) / 1000;
-        }
-    } else if (!esFeriado(startTime)) {
-        // Verificar entrada temprana
-        if (startTime < startOfWorkDay) {
-            alertMessage = `<span class="alert-text warning"><i class="fas fa-exclamation-triangle"></i> Entrada anticipada: ${startTime.toLocaleTimeString()} (Horario normal inicia 8:33)</span>`;
-            alertType = "warning";
-            startTime = startOfWorkDay;
-        }
-        
-        if (endTime <= endOfWorkDay) {
-            workSeconds = (endTime - startTime) / 1000;
-            // Verificar salida temprana
-            if (endTime < endOfWorkDay) {
-                alertMessage = `<span class="alert-text warning"><i class="fas fa-exclamation-triangle"></i> Salida anticipada: ${endTime.toLocaleTimeString()} (Horario normal termina 17:33)</span>`;
-                alertType = "warning";
-            }
-        } else {
-            workSeconds = (endOfWorkDay - startTime) / 1000;
+            // Verificar si la entrada está dentro del rango de flexibilidad
+            const entradaDentroDeFlexibilidad = entrada >= horaEntradaMinima && entrada <= horaEntradaMaxima;
             
-            if (endTime > endOfWorkDay && endTime <= endOfDiurnalOvertime) {
-                diurnalOvertimeSeconds = (endTime - endOfWorkDay) / 1000;
-                // Alerta de horas extras diurnas
-                alertMessage = `<span class="alert-text info"><i class="fas fa-info-circle"></i> Horas extras diurnas registradas: ${formatTime(diurnalOvertimeSeconds)}</span>`;
-                alertType = "info";
-            } else if (endTime > endOfDiurnalOvertime) {
-                diurnalOvertimeSeconds = (endOfDiurnalOvertime - endOfWorkDay) / 1000;
-                nocturnalOvertimeSeconds = (endTime - startOfNocturnalOvertime) / 1000;
-                // Alerta de horas extras nocturnas
-                alertMessage = `<span class="alert-text info"><i class="fas fa-moon"></i> Horas extras nocturnas registradas: ${formatTime(nocturnalOvertimeSeconds)}</span>`;
-                alertType = "info";
+            if (entradaDentroDeFlexibilidad) {
+                // Calcular la hora de salida sumando 9 horas a la hora de entrada
+                horaSalidaEsperada = new Date(entrada.getTime() + (9 * 60 * 60 * 1000)); // 9 horas en milisegundos
+                horaEntradaEsperada = entrada;
+                
+                mensajeFlexibilidad = `<div class="alert alert-info"><i class="fas fa-clock"></i><span>Se aplicó flexibilidad horaria. Hora de salida esperada: ${horaSalidaEsperada.toLocaleTimeString('es-ES', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}</span></div>`;
+            } else {
+                // Si está fuera del rango de flexibilidad, usar la hora normal (8:33 - 17:33)
+                horaEntradaEsperada = new Date(entrada);
+                horaEntradaEsperada.setHours(8, 33, 0, 0);
+                horaSalidaEsperada = new Date(entrada);
+                horaSalidaEsperada.setHours(17, 33, 0, 0);
             }
         }
     } else {
-        nocturnalOvertimeSeconds = (endTime - startTime) / 1000;
-        // Alerta de día feriado
-        alertMessage = `<span class="alert-text info"><i class="fas fa-calendar-check"></i> Día feriado o fin de semana - Todas las horas se calculan al 50%</span>`;
-        alertType = "info";
+        // Para fechas anteriores al 03/03/2025
+        if (entradaTemprana) {
+            // Si entró entre 6:00 y 7:59, usar las 8:33 como hora de entrada
+            horaEntradaEsperada = new Date(entrada);
+            horaEntradaEsperada.setHours(8, 33, 0, 0);
+            horaSalidaEsperada = new Date(entrada);
+            horaSalidaEsperada.setHours(17, 33, 0, 0);
+            mensajeFlexibilidad = `<div class="alert alert-info"><i class="fas fa-clock"></i><span>Entrada temprana. Se considera desde las 08:33. Hora de salida esperada: 17:33</span></div>`;
+        } else {
+            // Usar el horario fijo (8:33 - 17:33)
+            horaEntradaEsperada = new Date(entrada);
+            horaEntradaEsperada.setHours(8, 33, 0, 0);
+            horaSalidaEsperada = new Date(entrada);
+            horaSalidaEsperada.setHours(17, 33, 0, 0);
+        }
     }
 
-    // Alertas críticas
-    if (startTime.getTime() === endTime.getTime()) {
-        alertMessage = `<span class="alert-text"><i class="fas fa-exclamation-circle"></i> Error: Falta marcación de entrada o salida</span>`;
-        alertType = "error";
-    } else if ((diurnalOvertimeSeconds === 0 && nocturnalOvertimeSeconds === 0) && workSeconds === 0) {
-        alertMessage = `<span class="alert-text"><i class="fas fa-exclamation-circle"></i> Error: No se registraron horas trabajadas</span>`;
-        alertType = "error";
+    // Si la entrada es después de la hora esperada, usar la hora real de entrada
+    const entradaParaCalculo = entrada > horaEntradaEsperada ? entrada : horaEntradaEsperada;
+    
+    // Si no cumple con las horas requeridas
+    if (salida < horaSalidaEsperada) {
+        return {
+            diurnalSeconds: 0,
+            nocturnalSeconds: 0,
+            alertMessage: `<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i><span>No se completó la jornada laboral requerida. Se requiere salir a las ${horaSalidaEsperada.toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit'
+            })}</span></div>`
+        };
     }
 
-    // Verificar jornada extendida (más de 12 horas)
-    const totalWorkTime = (endTime - startTime) / 1000;
-    if (totalWorkTime > 12 * 3600) {
-        alertMessage = `<span class="alert-text"><i class="fas fa-exclamation-triangle"></i> Advertencia: Jornada extendida detectada (${formatTime(totalWorkTime)})</span>`;
-        alertType = "warning";
+    // Calcular la diferencia en segundos desde la hora de salida esperada
+    const diffSeconds = Math.floor((salida - horaSalidaEsperada) / 1000);
+    
+    if (diffSeconds <= 0) {
+        return {
+            diurnalSeconds: 0,
+            nocturnalSeconds: 0,
+            alertMessage: mensajeFlexibilidad || ''
+        };
+    }
+
+    let diurnalSeconds = 0;
+    let nocturnalSeconds = 0;
+    let current = new Date(horaSalidaEsperada);
+
+    while (current < salida) {
+        const hour = current.getHours();
+        const secondsToAdd = Math.min(3600, Math.floor((salida - current) / 1000));
+        if (hour >= 22 || hour < 6) {
+            nocturnalSeconds += secondsToAdd;
+        } else {
+            diurnalSeconds += secondsToAdd;
+        }
+        current.setHours(current.getHours() + 1);
     }
 
     return {
-        diurnalSeconds: Math.round(diurnalOvertimeSeconds),
-        nocturnalSeconds: Math.round(nocturnalOvertimeSeconds),
-        workSeconds: Math.round(workSeconds),
-        alertMessage,
-        alertType
+        diurnalSeconds,
+        nocturnalSeconds,
+        alertMessage: mensajeFlexibilidad
     };
 }
 function actualizarTotales(totals, status, horasExtrasDiurnas, horasExtrasNocturnas, restar = false) {
@@ -193,7 +225,7 @@ function actualizarTotales(totals, status, horasExtrasDiurnas, horasExtrasNoctur
     }
 }
 function mostrarResumen() {
-    // Totales individuales por estado
+    // Totales individuales por estado y porcentaje
     const totalAprobadasDiurnas = totals.aprobadas["25%"];
     const totalAprobadasNocturnas = totals.aprobadas["50%"];
     const totalRechazadasDiurnas = totals.rechazadas["25%"];
@@ -201,74 +233,76 @@ function mostrarResumen() {
     const totalPendientesDiurnas = totals.pendientes["25%"];
     const totalPendientesNocturnas = totals.pendientes["50%"];
 
-    // Sumar todos los totales sin restar entre estados
-    const totalDiurnas = totalAprobadasDiurnas + totalRechazadasDiurnas + totalPendientesDiurnas;
-    const totalNocturnas = totalAprobadasNocturnas + totalRechazadasNocturnas + totalPendientesNocturnas;
+    // Calcular totales por estado
+    const totalAprobadas = totalAprobadasDiurnas + totalAprobadasNocturnas;
+    const totalRechazadas = totalRechazadasDiurnas + totalRechazadasNocturnas;
+    const totalPendientes = totalPendientesDiurnas + totalPendientesNocturnas;
 
-    // Formatear los totales para mostrarlos en hh:mm:ss
-    const totalDiurnasFormatted = formatTime(totalDiurnas);
-    const totalNocturnasFormatted = formatTime(totalNocturnas);
-    const totalAprobadasDiurnasFormatted = formatTime(totalAprobadasDiurnas);
-    const totalAprobadasNocturnasFormatted = formatTime(totalAprobadasNocturnas);
-    const totalRechazadasDiurnasFormatted = formatTime(totalRechazadasDiurnas);
-    const totalRechazadasNocturnasFormatted = formatTime(totalRechazadasNocturnas);
-    const totalPendientesDiurnasFormatted = formatTime(totalPendientesDiurnas);
-    const totalPendientesNocturnasFormatted = formatTime(totalPendientesNocturnas);
+    // Calcular total general (solo aprobadas - rechazadas)
+    const totalGeneral = totalAprobadas - totalRechazadas;
+
+    // Formatear todos los valores
+    const formatearHoras = {
+        aprobadasDiurnas: formatTime(totalAprobadasDiurnas),
+        aprobadasNocturnas: formatTime(totalAprobadasNocturnas),
+        aprobadasTotal: formatTime(totalAprobadas),
+        rechazadasDiurnas: formatTime(totalRechazadasDiurnas),
+        rechazadasNocturnas: formatTime(totalRechazadasNocturnas),
+        rechazadasTotal: formatTime(totalRechazadas),
+        pendientesDiurnas: formatTime(totalPendientesDiurnas),
+        pendientesNocturnas: formatTime(totalPendientesNocturnas),
+        pendientesTotal: formatTime(totalPendientes),
+        totalGeneral: formatTime(totalGeneral)
+    };
 
     // Mostrar el resumen en el contenedor HTML
     document.getElementById('resumen-container').innerHTML = `
-        <div class="row">
-            <div class="col-md-4">
-                <h3>Total H.E. Aprobadas</h3>
-                <table class="table table-bordered">
-                    <tbody>
-                        <tr><td>Total H. E. Diurnas al 25%:</td><td>${totalAprobadasDiurnasFormatted}</td></tr>
-                        <tr><td>Total H. E. Nocturnas al 50%:</td><td>${totalAprobadasNocturnasFormatted}</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="col-md-4">
-                <h3>Total H.E. Rechazadas</h3>
-                <table class="table table-bordered">
-                    <tbody>
-                        <tr><td>Total H. E. Diurnas al 25%:</td><td>${totalRechazadasDiurnasFormatted}</td></tr>
-                        <tr><td>Total H. E. Nocturnas al 50%:</td><td>${totalRechazadasNocturnasFormatted}</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="col-md-4">
-                <h3>Total H.E. Pendientes</h3>
-                <table class="table table-bordered">
-                    <tbody>
-                        <tr><td>Total H. E. Diurnas al 25%:</td><td>${totalPendientesDiurnasFormatted}</td></tr>
-                        <tr><td>Total H. E. Nocturnas al 50%:</td><td>${totalPendientesNocturnasFormatted}</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-      
-        <div class="row">
-            <div class="col-md-12">
-                <h3>Suma Total de Horas Extras</h3>
-                <table class="table table-bordered">
-                    <tbody>
-                        <tr><td><strong>Suma Total Horas Extras Aprobadas Diurnas + Nocturnas:</strong></td><td><strong>${formatTime(totalAprobadasDiurnas + totalAprobadasNocturnas)}</strong></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <h3>Resumen de Horas</h3>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Estado</th>
+                    <th>H.E. 25%</th>
+                    <th>H.E. 50%</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Aprobadas</strong></td>
+                    <td>${formatearHoras.aprobadasDiurnas}</td>
+                    <td>${formatearHoras.aprobadasNocturnas}</td>
+                    <td><strong>${formatearHoras.aprobadasTotal}</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>Rechazadas</strong></td>
+                    <td>${formatearHoras.rechazadasDiurnas}</td>
+                    <td>${formatearHoras.rechazadasNocturnas}</td>
+                    <td><strong>${formatearHoras.rechazadasTotal}</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>Pendientes</strong></td>
+                    <td>${formatearHoras.pendientesDiurnas}</td>
+                    <td>${formatearHoras.pendientesNocturnas}</td>
+                    <td><strong>${formatearHoras.pendientesTotal}</strong></td>
+                </tr>
+                <tr class="table-total">
+                    <td><strong>Total General</strong></td>
+                    <td colspan="3"><strong>${formatearHoras.totalGeneral}</strong></td>
+                </tr>
+            </tbody>
+        </table>
     `;
 
     // Para depuración: mostrar en consola los valores totales
-    console.log("Totales Aprobadas Diurnas:", totalAprobadasDiurnasFormatted);
-    console.log("Totales Rechazadas Diurnas:", totalRechazadasDiurnasFormatted);
-    console.log("Totales Pendientes Diurnas:", totalPendientesDiurnasFormatted);
-    console.log("Total Horas Diurnas:", totalDiurnasFormatted);
-
-    console.log("Totales Aprobadas Nocturnas:", totalAprobadasNocturnasFormatted);
-    console.log("Totales Rechazadas Nocturnas:", totalRechazadasNocturnasFormatted);
-    console.log("Totales Pendientes Nocturnas:", totalPendientesNocturnasFormatted);
-    console.log("Total Horas Nocturnas:", totalNocturnasFormatted);
+    console.log("Resumen de Horas Extras:");
+    console.log("Aprobadas 25%:", formatearHoras.aprobadasDiurnas);
+    console.log("Aprobadas 50%:", formatearHoras.aprobadasNocturnas);
+    console.log("Rechazadas 25%:", formatearHoras.rechazadasDiurnas);
+    console.log("Rechazadas 50%:", formatearHoras.rechazadasNocturnas);
+    console.log("Pendientes 25%:", formatearHoras.pendientesDiurnas);
+    console.log("Pendientes 50%:", formatearHoras.pendientesNocturnas);
+    console.log("Total General (Aprobadas - Rechazadas):", formatearHoras.totalGeneral);
 }
 function generateReport(filteredData) {
     // Reiniciar los totales al generar un nuevo reporte
@@ -283,7 +317,6 @@ function generateReport(filteredData) {
         const dateKey = timestamp.toLocaleDateString();
 
         if (!dailyData[dateKey]) {
-            // Crear un nuevo registro para la fecha
             dailyData[dateKey] = {
                 id: item.id,
                 date: dateKey,
@@ -292,7 +325,6 @@ function generateReport(filteredData) {
                 autoAssigned: false
             };
         } else {
-            // Actualizar el registro existente si es la misma fecha
             if (timestamp < dailyData[dateKey].startTime) {
                 dailyData[dateKey].startTime = timestamp;
             }
@@ -315,13 +347,11 @@ function generateReport(filteredData) {
         let diurnalFormatted = "00:00:00";
         let nocturnalFormatted = "00:00:00";
 
-        // Si la hora de inicio y la hora de fin son iguales, mostrar alerta de falta de marcación
         if (record.startTime.getTime() === record.endTime.getTime()) {
-            alertMessage = `<span class="alert-text"><i class="fas fa-exclamation-circle"></i> Error: Falta marcación de entrada o salida</span>`;
+            alertMessage = `<div class="alert alert-error"><i class="fas fa-exclamation-circle"></i><span>Error: Falta marcación de entrada o salida</span></div>`;
             alertClass = 'alerta-horas';
         } else {
-            // Calcular las horas extras
-            let { diurnalSeconds, nocturnalSeconds, alertMessage: extraAlertMessage, alertType } = calcularHorasExtras(record.startTime, record.endTime);
+            let { diurnalSeconds, nocturnalSeconds, alertMessage: extraAlertMessage } = calcularHorasExtras(record.startTime, record.endTime);
 
             diurnalFormatted = formatTime(diurnalSeconds);
             nocturnalFormatted = formatTime(nocturnalSeconds);
@@ -329,35 +359,30 @@ function generateReport(filteredData) {
             totalDiurnasSeconds += diurnalSeconds;
             totalNocturnasSeconds += nocturnalSeconds;
 
-            // Añadir mensaje de alerta y clase según el tipo
             if (extraAlertMessage) {
                 alertMessage = extraAlertMessage;
-                switch (alertType) {
-                    case 'error':
-                        alertClass = 'alerta-horas';
-                        break;
-                    case 'warning':
-                        alertClass = 'alerta-warning';
-                        break;
-                    case 'info':
-                        alertClass = '';
-                        break;
-                }
             }
         }
 
+        // Formatear la fecha para mostrarla en formato dd/mm/yyyy
+        const formattedDate = record.startTime.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+
         tableContent += `
             <tr class="${alertClass}">
-                <td><i class="fas fa-calendar-day"></i> ${record.date}</td>
-                <td data-timestamp="${record.startTime.toISOString()}"><i class="fas fa-clock"></i> ${startTimeFormatted}</td>
-                <td data-timestamp="${record.endTime.toISOString()}"><i class="fas fa-clock"></i> ${endTimeFormatted}</td>
-                <td><i class="fas fa-sun"></i> ${diurnalFormatted}</td>
-                <td><i class="fas fa-moon"></i> ${nocturnalFormatted}</td>
+                <td>${formattedDate}</td>
+                <td data-timestamp="${record.startTime.toISOString()}">${startTimeFormatted}</td>
+                <td data-timestamp="${record.endTime.toISOString()}">${endTimeFormatted}</td>
+                <td>${diurnalFormatted}</td>
+                <td>${nocturnalFormatted}</td>
                 <td>
-                    <select class="status-select" onchange="updateTotal(this, '${record.date}', '${diurnalFormatted}', '${nocturnalFormatted}')">
-                        <option value="AUTORIZADO" selected><i class="fas fa-check"></i> AUTORIZADO</option>
-                        <option value="RECHAZADO"><i class="fas fa-times"></i> RECHAZADO</option>
-                        <option value="PENDIENTE"><i class="fas fa-clock"></i> PENDIENTE</option>
+                    <select class="status-select" onchange="updateTotal(this, '${date}', '${diurnalFormatted}', '${nocturnalFormatted}')">
+                        <option value="AUTORIZADO">AUTORIZADO</option>
+                        <option value="RECHAZADO">RECHAZADO</option>
+                        <option value="PENDIENTE">PENDIENTE</option>
                     </select>
                 </td>
                 <td>${alertMessage}</td>
@@ -378,34 +403,45 @@ function generateReport(filteredData) {
     let totalNocturnasFormatted = formatTime(totalNocturnasSeconds);
     let totalCombinedFormatted = formatTime(totalCombinedSeconds);
 
-    // Añadir las filas de totales correctamente al final
+    // Añadir las filas de totales
     let totalRows = `
-        <tr class="table-info">
-            <td colspan="3"><strong><i class="fas fa-calculator"></i> Total</strong></td>
-            <td><strong><i class="fas fa-sun"></i> ${totalDiurnasFormatted}</strong></td>
-            <td><strong><i class="fas fa-moon"></i> ${totalNocturnasFormatted}</strong></td>
-            <td colspan="2"></td>
+        <tr>
+            <td colspan="3">Total</td>
+            <td>${totalDiurnasFormatted}</td>
+            <td>${totalNocturnasFormatted}</td>
+            <td colspan="3"></td>
         </tr>
-        <tr class="table-primary">
-            <td colspan="4"><strong><i class="fas fa-sum"></i> Total Combinado</strong></td>
-            <td colspan="3"><strong>${totalCombinedFormatted}</strong></td>
+        <tr>
+            <td colspan="3">Total Combinado</td>
+            <td colspan="5">${totalCombinedFormatted}</td>
         </tr>
     `;
 
+    // Obtener el ID y período para el título del reporte
+    const idInput = document.getElementById('idInput').value;
+    const monthInput = document.getElementById('monthInput').value.padStart(2, '0');
+    const yearInput = document.getElementById('yearInput').value;
+
     // Mostrar el contenido de la tabla en el DOM
     document.getElementById('output').innerHTML = `
-        <h2><i class="fas fa-file-alt"></i> Reporte de Horas Extras</h2>
+        <div class="report-header">
+            <h2>Reporte de Horas Extras</h2>
+            <div class="report-info">
+                <p>ID: ${idInput}</p>
+                <p>Período: ${monthInput}/${yearInput}</p>
+            </div>
+        </div>
         <table class="table">
             <thead>
                 <tr>
-                    <th><i class="fas fa-calendar"></i> Fecha</th>
-                    <th><i class="fas fa-sign-in-alt"></i> Hora Inicio</th>
-                    <th><i class="fas fa-sign-out-alt"></i> Hora Fin</th>
-                    <th><i class="fas fa-sun"></i> Horas Extras Diurnas (25%)</th>
-                    <th><i class="fas fa-moon"></i> Horas Extras Nocturnas/Feriado (50%)</th>
-                    <th><i class="fas fa-check-circle"></i> Estado</th>
-                    <th><i class="fas fa-exclamation-circle"></i> Alerta</th>
-                    <th><i class="fas fa-edit"></i> Editar</th>
+                    <th>Fecha</th>
+                    <th>Entrada</th>
+                    <th>Salida</th>
+                    <th>H.E. Diurnas</th>
+                    <th>H.E. Nocturnas</th>
+                    <th>Estado</th>
+                    <th>Observaciones</th>
+                    <th>Editar</th>
                 </tr>
             </thead>
             <tbody>
@@ -417,7 +453,7 @@ function generateReport(filteredData) {
         </table>
     `;
 
-    // Aquí es donde se debe agregar el código para inicializar el estado anterior
+    // Inicializar el estado anterior de los selectores
     document.querySelectorAll('.status-select').forEach((selectElement) => {
         const currentStatus = selectElement.value;
         selectElement.setAttribute('data-previous-status', currentStatus);
@@ -426,7 +462,7 @@ function generateReport(filteredData) {
     // Mostrar el resumen
     mostrarResumen();
 
-    // Mostrar los botones de descarga PDF y Excel una vez generado el reporte
+    // Mostrar los botones de descarga PDF y Excel
     document.getElementById('downloadPdfBtn').style.display = 'block';
     document.getElementById('downloadExcelBtn').style.display = 'block';
 }
@@ -484,17 +520,33 @@ function updateTotal(selectElement, date, horasExtrasDiurnas, horasExtrasNocturn
     const newStatus = selectElement.value;
     const previousStatus = selectElement.getAttribute('data-previous-status') || "";
 
-    // Convertir horas extras a segundos para poder operar
-    const segundosDiurnas = convertirHorasASegundos(horasExtrasDiurnas);
-    const segundosNocturnas = convertirHorasASegundos(horasExtrasNocturnas);
-
-    if (previousStatus && previousStatus !== newStatus) {
-        // Si el estado cambia, restamos las horas del estado anterior
-        actualizarTotales(totals, previousStatus, horasExtrasDiurnas, horasExtrasNocturnas, true);
+    // Si el estado anterior era RECHAZADO y cambia a otro estado, sumamos las horas
+    if (previousStatus === "RECHAZADO" && newStatus !== "RECHAZADO") {
+        // Restar del total de rechazadas
+        actualizarTotales(totals, "RECHAZADO", horasExtrasDiurnas, horasExtrasNocturnas, true);
+        // Sumar al nuevo estado
+        actualizarTotales(totals, newStatus, horasExtrasDiurnas, horasExtrasNocturnas, false);
     }
-
-    // Sumar las horas del nuevo estado
-    actualizarTotales(totals, newStatus, horasExtrasDiurnas, horasExtrasNocturnas);
+    // Si el nuevo estado es RECHAZADO y el anterior era otro estado, restamos las horas
+    else if (newStatus === "RECHAZADO" && previousStatus !== "RECHAZADO") {
+        // Restar del estado anterior
+        if (previousStatus) {
+            actualizarTotales(totals, previousStatus, horasExtrasDiurnas, horasExtrasNocturnas, true);
+        }
+        // Sumar a rechazadas
+        actualizarTotales(totals, "RECHAZADO", horasExtrasDiurnas, horasExtrasNocturnas, false);
+    }
+    // Si ambos estados son diferentes pero ninguno es RECHAZADO
+    else if (previousStatus && previousStatus !== newStatus) {
+        // Restar del estado anterior
+        actualizarTotales(totals, previousStatus, horasExtrasDiurnas, horasExtrasNocturnas, true);
+        // Sumar al nuevo estado
+        actualizarTotales(totals, newStatus, horasExtrasDiurnas, horasExtrasNocturnas, false);
+    }
+    // Si no había estado anterior, simplemente sumamos al nuevo estado
+    else if (!previousStatus) {
+        actualizarTotales(totals, newStatus, horasExtrasDiurnas, horasExtrasNocturnas, false);
+    }
 
     // Actualizamos el estado anterior con el nuevo estado
     selectElement.setAttribute('data-previous-status', newStatus);
@@ -524,9 +576,7 @@ function downloadPDF() {
     const styles = {
         header: { fillColor: [41, 45, 62], textColor: [255, 255, 255], fontSize: 12, fontStyle: 'bold' },
         subheader: { fillColor: [69, 75, 95], textColor: [255, 255, 255], fontSize: 10 },
-        cell: { fontSize: 9 },
-        warning: { fillColor: [255, 244, 229], textColor: [0, 0, 0] },
-        error: { fillColor: [255, 235, 235], textColor: [0, 0, 0] }
+        cell: { fontSize: 9 }
     };
 
     // Título del documento
@@ -545,7 +595,7 @@ function downloadPDF() {
 
     // Configuración de la tabla
     const headers = [
-        ['Fecha', 'Entrada', 'Salida', 'H.E. Diurnas', 'H.E. Nocturnas', 'Estado', 'Observaciones']
+        ['Fecha', 'Entrada', 'Salida', 'H.E. 25%', 'H.E. 50%', 'Estado', 'Observaciones']
     ];
 
     // Obtener datos de la tabla web
@@ -553,33 +603,33 @@ function downloadPDF() {
     const rows = document.querySelectorAll('#output table tbody tr');
     
     rows.forEach(row => {
-        if (!row) return; // Skip if row is undefined
+        if (!row) return;
         
         const cells = row.querySelectorAll('td');
-        if (!cells || cells.length < 7) return; // Skip if not enough cells
+        if (!cells || cells.length < 7) return;
         
         const rowData = [];
         
         // Fecha
-        rowData.push(cells[0] ? cells[0].textContent.replace(/[^\d/-]/g, '').trim() : '');
+        rowData.push(cells[0] ? cells[0].textContent.trim() : '');
         
         // Hora Inicio
-        rowData.push(cells[1] ? cells[1].textContent.replace(/[^\d:]/g, '').trim() : '');
+        rowData.push(cells[1] ? cells[1].textContent.trim() : '');
         
         // Hora Fin
-        rowData.push(cells[2] ? cells[2].textContent.replace(/[^\d:]/g, '').trim() : '');
+        rowData.push(cells[2] ? cells[2].textContent.trim() : '');
         
-        // H.E. Diurnas
-        rowData.push(cells[3] ? cells[3].textContent.replace(/[^\d:]/g, '').trim() : '00:00:00');
+        // H.E. 25%
+        rowData.push(cells[3] ? cells[3].textContent.trim() : '00:00:00');
         
-        // H.E. Nocturnas
-        rowData.push(cells[4] ? cells[4].textContent.replace(/[^\d:]/g, '').trim() : '00:00:00');
+        // H.E. 50%
+        rowData.push(cells[4] ? cells[4].textContent.trim() : '00:00:00');
         
         // Estado
         const select = cells[5] ? cells[5].querySelector('select') : null;
         rowData.push(select ? select.value : (cells[5] ? cells[5].textContent.trim() : 'PENDIENTE'));
         
-        // Alerta (eliminar HTML tags)
+        // Observaciones (eliminar HTML tags)
         const alertText = cells[6] ? cells[6].textContent.replace(/<[^>]*>/g, '').trim() : '';
         rowData.push(alertText);
         
@@ -598,59 +648,68 @@ function downloadPDF() {
             fontSize: styles.cell.fontSize,
             cellPadding: 3
         },
-        headStyles: styles.header,
-        alternateRowStyles: { fillColor: [248, 249, 250] },
+        headStyles: {
+            fillColor: [0, 102, 255],
+            textColor: [255, 255, 255],
+            fontSize: 10,
+            fontStyle: 'bold'
+        },
         columnStyles: {
             0: { cellWidth: 25 }, // Fecha
             1: { cellWidth: 20 }, // Entrada
             2: { cellWidth: 20 }, // Salida
-            3: { cellWidth: 25 }, // H.E. Diurnas
-            4: { cellWidth: 25 }, // H.E. Nocturnas
+            3: { cellWidth: 25 }, // H.E. 25%
+            4: { cellWidth: 25 }, // H.E. 50%
             5: { cellWidth: 25 }, // Estado
             6: { cellWidth: 'auto' } // Observaciones
-        },
-        didParseCell: function(data) {
-            if (data.section === 'body' && data.column.index === 5) {
-                const estado = String(data.cell.text).toLowerCase();
-                if (estado.includes('rechazado')) {
-                    data.cell.styles.fillColor = styles.error.fillColor;
-                } else if (estado.includes('pendiente')) {
-                    data.cell.styles.fillColor = styles.warning.fillColor;
-                }
-            }
         }
     });
 
     // Agregar resumen
     const finalY = doc.previousAutoTable.finalY || 45;
-    doc.setFontSize(12);
+    doc.setFontSize(14);
     doc.setTextColor(41, 45, 62);
-    doc.text('Resumen de Horas', 14, finalY + 10);
+    doc.text('Resumen de Horas', 14, finalY + 15);
 
     // Preparar datos del resumen
+    const resumenHeaders = [['Estado', 'H.E. 25%', 'H.E. 50%', 'Total']];
+    
+    // Calcular totales
+    const totalAprobadas = totals.aprobadas["25%"] + totals.aprobadas["50%"];
+    const totalRechazadas = totals.rechazadas["25%"] + totals.rechazadas["50%"];
+    const totalPendientes = totals.pendientes["25%"] + totals.pendientes["50%"];
+    
     const resumenData = [
-        ['Horas Extras Diurnas', '', '', 'Horas Extras Nocturnas'],
-        ['Aprobadas:', formatTime(totals.aprobadas["25%"]), '', 'Aprobadas:', formatTime(totals.aprobadas["50%"])],
-        ['Rechazadas:', formatTime(totals.rechazadas["25%"]), '', 'Rechazadas:', formatTime(totals.rechazadas["50%"])],
-        ['Pendientes:', formatTime(totals.pendientes["25%"]), '', 'Pendientes:', formatTime(totals.pendientes["50%"])],
-        [], // Línea en blanco
-        ['Total Diurnas:', formatTime(totalDiurnasSeconds), '', 'Total Nocturnas:', formatTime(totalNocturnasSeconds)],
-        [], // Línea en blanco
-        ['Total Combinado:', formatTime(totalDiurnasSeconds + totalNocturnasSeconds)]
+        ['Aprobadas', formatTime(totals.aprobadas["25%"]), formatTime(totals.aprobadas["50%"]), 
+         formatTime(totalAprobadas)],
+        ['Rechazadas', formatTime(totals.rechazadas["25%"]), formatTime(totals.rechazadas["50%"]), 
+         formatTime(totalRechazadas)],
+        ['Pendientes', formatTime(totals.pendientes["25%"]), formatTime(totals.pendientes["50%"]), 
+         formatTime(totalPendientes)]
     ];
+
+    // Total general (solo aprobadas - rechazadas)
+    const totalGeneral = totalAprobadas - totalRechazadas;
+    resumenData.push(['Total General', '', '', formatTime(totalGeneral)]);
 
     // Agregar tabla de resumen
     doc.autoTable({
+        head: resumenHeaders,
         body: resumenData,
-        startY: finalY + 15,
-        theme: 'grid',
+        startY: finalY + 20,
         styles: {
             fontSize: 10,
             cellPadding: 5
         },
+        headStyles: {
+            fillColor: [0, 102, 255],
+            textColor: [255, 255, 255],
+            fontSize: 10,
+            fontStyle: 'bold'
+        },
         columnStyles: {
             0: { fontStyle: 'bold' },
-            2: { fontStyle: 'bold' }
+            3: { fontStyle: 'bold' }
         }
     });
 
@@ -658,19 +717,18 @@ function downloadPDF() {
     doc.save(`Reporte_${idInput}_${monthInput}_${yearInput}.pdf`);
 }
 async function downloadExcel() {
-    // Crear un nuevo libro de trabajo
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Reporte');
 
     // Configurar el ancho de las columnas
     worksheet.columns = [
         { width: 15 }, // Fecha
-        { width: 12 }, // Hora Inicio
-        { width: 12 }, // Hora Fin
-        { width: 20 }, // H.E. Diurnas
-        { width: 20 }, // H.E. Nocturnas
+        { width: 12 }, // Entrada
+        { width: 12 }, // Salida
+        { width: 15 }, // H.E. 25%
+        { width: 15 }, // H.E. 50%
         { width: 15 }, // Estado
-        { width: 50 }  // Observaciones
+        { width: 40 }  // Observaciones
     ];
 
     // Obtener información del reporte
@@ -678,69 +736,33 @@ async function downloadExcel() {
     const monthInput = document.getElementById('monthInput').value;
     const yearInput = document.getElementById('yearInput').value;
 
-    // Estilos para el título
-    const titleStyle = {
-        font: { size: 16, bold: true, color: { argb: '002060' } },
-        alignment: { horizontal: 'center' },
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF' } }
-    };
-
-    // Estilos para subtítulos
-    const subtitleStyle = {
-        font: { size: 12, bold: true },
-        alignment: { horizontal: 'left' },
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF' } }
-    };
-
-    // Estilos para encabezados de tabla
-    const headerStyle = {
-        font: { bold: true, color: { argb: 'FFFFFF' } },
-        alignment: { horizontal: 'center', vertical: 'middle' },
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: '4472C4' } },
-        border: {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-        }
-    };
-
-    // Estilos para datos
-    const dataStyle = {
-        alignment: { horizontal: 'center', vertical: 'middle' },
-        border: {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-        }
-    };
-
     // Título principal
     worksheet.mergeCells('A1:G1');
     const titleCell = worksheet.getCell('A1');
     titleCell.value = 'REPORTE DE HORAS EXTRAS';
-    Object.assign(titleCell, titleStyle);
+    titleCell.font = { size: 16, bold: true };
+    titleCell.alignment = { horizontal: 'center' };
 
     // Información del reporte
     worksheet.mergeCells('A2:G2');
-    const idCell = worksheet.getCell('A2');
-    idCell.value = `ID: ${idInput}`;
-    Object.assign(idCell, subtitleStyle);
+    worksheet.getCell('A2').value = `ID: ${idInput}`;
+    worksheet.getCell('A2').font = { size: 12, bold: true };
 
     worksheet.mergeCells('A3:G3');
-    const periodCell = worksheet.getCell('A3');
-    periodCell.value = `Período: ${monthInput}/${yearInput}`;
-    Object.assign(periodCell, subtitleStyle);
-
-    // Línea en blanco
-    worksheet.addRow([]);
+    worksheet.getCell('A3').value = `Período: ${monthInput}/${yearInput}`;
+    worksheet.getCell('A3').font = { size: 12, bold: true };
 
     // Encabezados de la tabla
-    const headers = ['Fecha', 'Hora Inicio', 'Hora Fin', 'H.E. Diurnas (25%)', 'H.E. Nocturnas (50%)', 'Estado', 'Observaciones'];
+    const headers = ['Fecha', 'Entrada', 'Salida', 'H.E. 25%', 'H.E. 50%', 'Estado', 'Observaciones'];
     const headerRow = worksheet.addRow(headers);
     headerRow.eachCell((cell) => {
-        Object.assign(cell, headerStyle);
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: '0066FF' }
+        };
+        cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+        cell.alignment = { horizontal: 'center' };
     });
 
     // Obtener y agregar datos de la tabla
@@ -749,81 +771,75 @@ async function downloadExcel() {
         const cells = row.querySelectorAll('td');
         if (cells.length >= 7) {
             const rowData = [
-                cells[0].textContent.replace(/[^\d/-]/g, '').trim(),
-                cells[1].textContent.replace(/[^\d:]/g, '').trim(),
-                cells[2].textContent.replace(/[^\d:]/g, '').trim(),
-                cells[3].textContent.replace(/[^\d:]/g, '').trim(),
-                cells[4].textContent.replace(/[^\d:]/g, '').trim(),
+                cells[0].textContent.trim(),
+                cells[1].textContent.trim(),
+                cells[2].textContent.trim(),
+                cells[3].textContent.trim(),
+                cells[4].textContent.trim(),
                 cells[5].querySelector('select') ? cells[5].querySelector('select').value : cells[5].textContent.trim(),
                 cells[6].textContent.replace(/<[^>]*>/g, '').trim()
             ];
-            const dataRow = worksheet.addRow(rowData);
-            dataRow.eachCell((cell) => {
-                Object.assign(cell, dataStyle);
-                // Colorear estados
-                if (cell.col === 6) { // Columna de Estado
-                    if (cell.value === 'RECHAZADO') {
-                        cell.fill = {
-                            type: 'pattern',
-                            pattern: 'solid',
-                            fgColor: { argb: 'FFCCCB' }
-                        };
-                    } else if (cell.value === 'PENDIENTE') {
-                        cell.fill = {
-                            type: 'pattern',
-                            pattern: 'solid',
-                            fgColor: { argb: 'FFE699' }
-                        };
-                    }
-                }
+            const excelRow = worksheet.addRow(rowData);
+            excelRow.eachCell((cell) => {
+                cell.alignment = { horizontal: 'center' };
             });
         }
     });
 
-    // Agregar líneas en blanco antes del resumen
+    // Agregar espacio antes del resumen
     worksheet.addRow([]);
     worksheet.addRow([]);
 
-    // Título del resumen
-    const resumenRow = worksheet.addRow(['RESUMEN DE HORAS EXTRAS']);
-    worksheet.mergeCells(`A${resumenRow.number}:G${resumenRow.number}`);
-    Object.assign(worksheet.getCell(`A${resumenRow.number}`), {
-        font: { size: 14, bold: true },
-        alignment: { horizontal: 'center' },
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E2EFD9' } }
+    // Resumen de Horas
+    const resumenTitle = worksheet.addRow(['Resumen de Horas']);
+    resumenTitle.font = { size: 14, bold: true };
+
+    // Encabezados del resumen
+    const resumenHeaders = ['Estado', 'H.E. 25%', 'H.E. 50%', 'Total'];
+    const resumenHeaderRow = worksheet.addRow(resumenHeaders);
+    resumenHeaderRow.eachCell((cell) => {
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: '0066FF' }
+        };
+        cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+        cell.alignment = { horizontal: 'center' };
     });
 
-    worksheet.addRow([]); // Línea en blanco
+    // Calcular totales
+    const totalAprobadas = totals.aprobadas["25%"] + totals.aprobadas["50%"];
+    const totalRechazadas = totals.rechazadas["25%"] + totals.rechazadas["50%"];
+    const totalPendientes = totals.pendientes["25%"] + totals.pendientes["50%"];
 
-    // Estilos para el resumen
-    const resumenStyle = {
-        font: { bold: true },
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F2F2F2' } }
-    };
+    // Datos del resumen
+    const resumenData = [
+        ['Aprobadas', formatTime(totals.aprobadas["25%"]), formatTime(totals.aprobadas["50%"]), 
+         formatTime(totalAprobadas)],
+        ['Rechazadas', formatTime(totals.rechazadas["25%"]), formatTime(totals.rechazadas["50%"]), 
+         formatTime(totalRechazadas)],
+        ['Pendientes', formatTime(totals.pendientes["25%"]), formatTime(totals.pendientes["50%"]), 
+         formatTime(totalPendientes)]
+    ];
 
-    // Agregar resumen de horas extras diurnas
-    worksheet.addRow(['HORAS EXTRAS DIURNAS (25%)']).eachCell(cell => Object.assign(cell, resumenStyle));
-    worksheet.addRow(['Aprobadas:', formatTime(totals.aprobadas["25%"])]);
-    worksheet.addRow(['Rechazadas:', formatTime(totals.rechazadas["25%"])]);
-    worksheet.addRow(['Pendientes:', formatTime(totals.pendientes["25%"])]);
-    worksheet.addRow(['Total Diurnas:', formatTime(totalDiurnasSeconds)]);
-    worksheet.addRow([]);
-
-    // Agregar resumen de horas extras nocturnas
-    worksheet.addRow(['HORAS EXTRAS NOCTURNAS (50%)']).eachCell(cell => Object.assign(cell, resumenStyle));
-    worksheet.addRow(['Aprobadas:', formatTime(totals.aprobadas["50%"])]);
-    worksheet.addRow(['Rechazadas:', formatTime(totals.rechazadas["50%"])]);
-    worksheet.addRow(['Pendientes:', formatTime(totals.pendientes["50%"])]);
-    worksheet.addRow(['Total Nocturnas:', formatTime(totalNocturnasSeconds)]);
-    worksheet.addRow([]);
-
-    // Total combinado
-    const totalRow = worksheet.addRow(['TOTAL COMBINADO:', formatTime(totalDiurnasSeconds + totalNocturnasSeconds)]);
-    totalRow.eachCell(cell => {
-        Object.assign(cell, {
-            font: { size: 12, bold: true },
-            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'BDD7EE' } }
+    resumenData.forEach(rowData => {
+        const row = worksheet.addRow(rowData);
+        row.eachCell((cell) => {
+            cell.alignment = { horizontal: 'center' };
         });
+    });
+
+    // Total General (solo aprobadas - rechazadas)
+    const totalGeneral = totalAprobadas - totalRechazadas;
+    const totalRow = worksheet.addRow(['Total General', '', '', formatTime(totalGeneral)]);
+    totalRow.eachCell((cell) => {
+        cell.font = { bold: true };
+        cell.alignment = { horizontal: 'center' };
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'E2EFD9' }
+        };
     });
 
     // Generar el archivo
