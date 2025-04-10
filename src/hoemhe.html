@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horas Extras</title>
+    <!-- FontAwesome para íconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <!-- CSS para estilos -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Estilo específico para botones de editar en esta pantalla */
+        .edit-btn, .action-btn {
+            background: linear-gradient(135deg, #4361ee, #4d6aff);
+            color: white;
+            border: none;
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 50%;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+            box-shadow: 0 3px 10px rgba(0, 123, 255, 0.15);
+            padding: 0 !important;
+            cursor: pointer;
+            margin: 0 auto !important;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .edit-btn i, .action-btn i {
+            font-size: 1rem;
+            margin: 0;
+            padding: 0;
+        }
+        
+        td:last-child {
+            text-align: center;
+            min-width: 60px;
+        }
+
+        .empleado-info {
+            margin-bottom: 20px;
+        }
+
+        .empleado-info .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: none;
+        }
+
+        .empleado-info .card-header {
+            background: linear-gradient(135deg, #4361ee, #4d6aff);
+            border-radius: 10px 10px 0 0;
+            padding: 15px 20px;
+        }
+
+        .empleado-info .card-header h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .empleado-info .card-body {
+            padding: 15px 20px;
+        }
+
+        .empleado-info p {
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+
+        .empleado-info p strong {
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        /* Estilo para el buscador de empleados */
+        #empleadoBusqueda {
+            position: relative;
+        }
+
+        #empleadoSugerencias {
+            position: absolute;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 0 0 5px 5px;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .sugerencia-item {
+            padding: 8px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .sugerencia-item:hover {
+            background-color: #f5f7ff;
+        }
+    </style>
+</head>
+<body>
+    <header class="user-info">
+        <div>
+            <span id="currentUserDisplay">Usuario: <span id="currentUserName">Administrador</span></span>
+        </div>
+        <button class="btn-logout" onclick="redirectToIndex()">Cerrar Sesión</button>
+    </header>
+
+    <div class="container">
+        <h1>Registro y Cálculo de Horas Extras</h1>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2>Filtrar por Empleado y Período</h2>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group" id="empleadoBusqueda">
+                            <label for="idInput">ID del Empleado:</label>
+                            <div class="input-group">
+                                <input type="text" id="idInput" class="form-control" placeholder="Ingrese el ID o apellido" autocomplete="off">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" type="button" id="btnBuscarEmpleado">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="empleadoSugerencias"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="monthInput">Mes:</label>
+                            <select id="monthInput" class="form-control">
+                                <option value="1">Enero</option>
+                                <option value="2">Febrero</option>
+                                <option value="3">Marzo</option>
+                                <option value="4">Abril</option>
+                                <option value="5">Mayo</option>
+                                <option value="6">Junio</option>
+                                <option value="7">Julio</option>
+                                <option value="8">Agosto</option>
+                                <option value="9">Septiembre</option>
+                                <option value="10">Octubre</option>
+                                <option value="11">Noviembre</option>
+                                <option value="12">Diciembre</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="yearInput">Año:</label>
+                            <input type="number" id="yearInput" class="form-control" placeholder="Año" value="2025">
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="filterData()">Generar Reporte</button>
+            </div>
+        </div>
+        
+        <div id="output" class="mt-4"></div>
+        
+        <div id="resumen-container" class="mt-4"></div>
+        
+        <div id="download-buttons" class="button-group download-buttons" style="display: none;">
+            <button class="btn btn-success" onclick="downloadExcel()"><i class="fas fa-file-excel"></i> Descargar Excel</button>
+            <button class="btn btn-danger" onclick="downloadPDF()"><i class="fas fa-file-pdf"></i> Descargar PDF</button>
+        </div>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://unpkg.com/exceljs/dist/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="js/he.js"></script>
+
+    <script>
+        // Implementar búsqueda de empleados
+        document.addEventListener('DOMContentLoaded', function() {
+            const idInput = document.getElementById('idInput');
+            const sugerencias = document.getElementById('empleadoSugerencias');
+            const btnBuscar = document.getElementById('btnBuscarEmpleado');
+            
+            // Cuando el usuario escribe en el campo de ID
+            idInput.addEventListener('input', function() {
+                const valor = this.value.toLowerCase();
+                if (valor.length < 2) {
+                    sugerencias.style.display = 'none';
+                    return;
+                }
+                
+                mostrarSugerencias(valor);
+            });
+            
+            // Botón de búsqueda
+            btnBuscar.addEventListener('click', function() {
+                mostrarSugerencias(idInput.value.toLowerCase());
+            });
+            
+            // Ocultar sugerencias al hacer clic fuera
+            document.addEventListener('click', function(e) {
+                if (!idInput.contains(e.target) && !sugerencias.contains(e.target) && !btnBuscar.contains(e.target)) {
+                    sugerencias.style.display = 'none';
+                }
+            });
+            
+            // Función para mostrar sugerencias
+            function mostrarSugerencias(valor) {
+                // Asegurarse de que empleadosInfo esté disponible
+                if (!window.empleadosInfo || !Array.isArray(window.empleadosInfo)) {
+                    return;
+                }
+                
+                // Filtrar empleados que coincidan con ID o apellido
+                const coincidencias = window.empleadosInfo.filter(emp => {
+                    const rutSinFormato = emp.RUT.replace(/\./g, '').replace(/-/g, '').toLowerCase();
+                    const apellido = emp.APELLIDOS.toLowerCase();
+                    const nombre = emp.NOMBRE.toLowerCase();
+                    
+                    return rutSinFormato.includes(valor) || 
+                           apellido.includes(valor) || 
+                           nombre.includes(valor);
+                }).slice(0, 8); // Limitar a 8 resultados
+                
+                // Mostrar las sugerencias
+                if (coincidencias.length > 0) {
+                    sugerencias.innerHTML = '';
+                    coincidencias.forEach(emp => {
+                        const rutSinVerificador = emp.RUT.replace(/\./g, '').replace(/-\w$/i, '');
+                        const item = document.createElement('div');
+                        item.className = 'sugerencia-item';
+                        item.innerHTML = `<strong>${emp.APELLIDOS}, ${emp.NOMBRE}</strong> (${emp.RUT})`;
+                        item.addEventListener('click', function() {
+                            idInput.value = rutSinVerificador;
+                            sugerencias.style.display = 'none';
+                        });
+                        sugerencias.appendChild(item);
+                    });
+                    sugerencias.style.display = 'block';
+                } else {
+                    sugerencias.style.display = 'none';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

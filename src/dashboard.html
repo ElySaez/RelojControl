@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Horas Extras</title>
+    <!-- Estilos CSS -->
+    <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="./css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <!-- Scripts de libraries externas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="user-info">
+        <span id="currentUserDisplay"></span>
+        <button onclick="logout()" class="btn-logout">
+            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+        </button>
+    </div>
+
+    <div class="container">
+        <h1><i class="fas fa-clock"></i> Sistema de Horas Extras</h1>
+        
+        <!-- Pestañas de navegación -->
+        <div class="tabs">
+            <div class="tab active" data-tab="home">
+                <i class="fas fa-home"></i> Dashboard
+            </div>
+            <div class="tab" data-tab="report">
+                <i class="fas fa-file-alt"></i> Generar Reporte
+            </div>
+        </div>
+        
+        <!-- Contenido de la pestaña Home/Dashboard -->
+        <div id="home" class="tab-content active">
+            <div class="dashboard-header">
+                <div class="row align-items-center mb-4">
+                    <div class="col-md-5">
+                        <h2 class="section-title"><i class="fas fa-chart-line"></i> Estadísticas de Asistencia</h2>
+                    </div>
+                    <div class="col-md-7">
+                        <div class="filtros-container">
+                            <div class="filtro-item">
+                                <label for="anio-estadisticas">Año:</label>
+                                <select id="anio-estadisticas" class="form-control">
+                                    <option value="2023">2023</option>
+                                    <option value="2024">2024</option>
+                                    <option value="2025">2025</option>
+                                </select>
+                            </div>
+                            
+                            <div class="filtro-item">
+                                <label for="mes-estadisticas">Mes:</label>
+                                <select id="mes-estadisticas" class="form-control">
+                                    <option value="1">Enero</option>
+                                    <option value="2">Febrero</option>
+                                    <option value="3">Marzo</option>
+                                    <option value="4">Abril</option>
+                                    <option value="5">Mayo</option>
+                                    <option value="6">Junio</option>
+                                    <option value="7">Julio</option>
+                                    <option value="8">Agosto</option>
+                                    <option value="9">Septiembre</option>
+                                    <option value="10">Octubre</option>
+                                    <option value="11">Noviembre</option>
+                                    <option value="12">Diciembre</option>
+                                </select>
+                            </div>
+                            
+                            <button id="cargar-estadisticas" class="btn btn-primary">
+                                <i class="fas fa-sync-alt"></i> Cargar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dashboard-cards">
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="card-title">Total Horas Extras este Mes</div>
+                    <div class="card-value" id="totalHorasExtras">0</div>
+                    <div class="card-comparison">+8% respecto al mes anterior</div>
+                </div>
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="card-title">Días con Atrasos</div>
+                    <div class="card-value" id="totalAtrasos">0</div>
+                    <div class="card-comparison">-12% respecto al mes anterior</div>
+                </div>
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="card-title">Cumplimiento de Horario</div>
+                    <div class="card-value" id="porcentajeCumplimiento">0%</div>
+                    <div class="card-comparison">+5% respecto al mes anterior</div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">
+                    <i class="fas fa-chart-bar"></i> Horas Extras por Semana
+                </div>
+                <canvas id="horasExtrasChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">
+                    <i class="fas fa-chart-pie"></i> Distribución de Atrasos por Día
+                </div>
+                <canvas id="atrasosChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">
+                    <i class="fas fa-chart-line"></i> Comparativa Mensual
+                </div>
+                <canvas id="comparativaChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Contenido de la pestaña Reportes -->
+        <div id="report" class="tab-content">
+            <h2><i class="fas fa-file-alt"></i> Generación de Reportes</h2>
+            
+            <div class="form-group">
+                <label for="idInput">ID:</label>
+                <input type="text" id="idInput" class="form-control" required placeholder="Ingrese el ID del empleado">
+            </div>
+            
+            <div class="form-group">
+                <label for="monthInput">Mes:</label>
+                <input type="number" id="monthInput" min="1" max="12" class="form-control" required placeholder="Ingrese el mes (1-12)">
+        </div>
+        
+        <div class="form-group">
+            <label for="yearInput">Año:</label>
+                <input type="number" id="yearInput" class="form-control" required placeholder="Ingrese el año">
+        </div>
+        
+        <div class="button-group">
+                <button id="generar-reporte-btn" class="btn btn-report">
+                <i class="fas fa-search"></i> Generar Reporte
+            </button>
+
+                <button onclick="redirectToSpecial()" class="btn btn-special-report">
+                    <i class="fas fa-exchange-alt"></i> Ir a Reportes Especiales
+            </button>
+        </div>
+        
+        <div id="output"></div>
+        
+        <div id="resumen-container"></div>
+        
+        <div class="button-group download-buttons">
+            <button id="downloadPdfBtn" onclick="downloadPDF()" class="btn btn-success" style="display: none;">
+                <i class="fas fa-file-pdf"></i> Descargar PDF
+            </button>
+            
+            <button id="downloadExcelBtn" onclick="downloadExcel()" class="btn btn-success" style="display: none;">
+                <i class="fas fa-file-excel"></i> Descargar Excel
+            </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts de la aplicación -->
+    <script src="./js/dashboard-charts.js"></script>
+    <script src="./js/dashboard-ui.js"></script>
+    <script>
+        // Inicializar manejo de pestañas para evitar el error de inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll(".tab");
+            
+            tabs.forEach(tab => {
+                tab.addEventListener("click", function() {
+                    // Destruir los gráficos primero antes de cambiar pestañas
+                    if (window.chartHorasExtras) {
+                        window.chartHorasExtras.destroy();
+                        window.chartHorasExtras = null;
+                    }
+                    if (window.chartAtrasos) {
+                        window.chartAtrasos.destroy();
+                        window.chartAtrasos = null;
+                    }
+                    if (window.chartComparativo) {
+                        window.chartComparativo.destroy();
+                        window.chartComparativo = null;
+                    }
+                    
+                    // Remover clase activa de todas las pestañas
+                    tabs.forEach(t => t.classList.remove("active"));
+                    // Añadir clase activa a la pestaña actual
+                    this.classList.add("active");
+                    
+                    // Ocultar todos los contenidos
+                    document.querySelectorAll('.tab-content').forEach(content => 
+                        content.classList.remove("active"));
+                    
+                    // Mostrar el contenido correspondiente
+                    const targetId = this.getAttribute("data-tab");
+                    document.getElementById(targetId).classList.add("active");
+                    
+                    // Si cambiamos al dashboard, inicializar los gráficos
+                    if (targetId === 'home') {
+                        // Iniciar con un pequeño retraso para asegurar que el DOM esté listo
+                        setTimeout(() => {
+                            if (typeof generarDatosDePrueba === 'function') {
+                                generarDatosDePrueba();
+                            }
+                        }, 100);
+                    }
+                });
+            });
+        });
+    </script>
+    <script src="./js/script.js"></script>
+</body>
+</html> 

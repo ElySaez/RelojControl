@@ -1,0 +1,718 @@
+/* Tema oscuro moderno */
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --background-dark: #1a1a1a;
+    --background-light: #2d2d2d;
+    --text-primary: #ffffff;
+    --text-secondary: #b3b3b3;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --border-radius: 8px;
+    --transition-speed: 0.3s;
+    --alert-error-bg: rgba(220, 53, 69, 0.1);
+    --alert-warning-bg: rgba(255, 193, 7, 0.1);
+    --alert-info-bg: rgba(0, 123, 255, 0.1);
+}
+
+body {
+    background-color: var(--background-dark);
+    color: var(--text-primary);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+/* Contenedor principal */
+.container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+/* Encabezado y título */
+h1 {
+    color: var(--primary-color);
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    text-align: center;
+    margin-bottom: 2rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    word-wrap: break-word;
+}
+
+h2, h3 {
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
+}
+
+/* Formulario y controles */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-control {
+    background-color: var(--background-light);
+    border: 1px solid var(--secondary-color);
+    color: var(--text-primary);
+    border-radius: var(--border-radius);
+    padding: 0.75rem;
+    width: 100%;
+    transition: all var(--transition-speed);
+    font-size: 16px; /* Evitar zoom en iOS */
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: none;
+}
+
+/* Botones */
+.btn {
+    border-radius: var(--border-radius);
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all var(--transition-speed);
+    border: none;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    width: 100%;
+    font-size: clamp(14px, 2vw, 16px);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn i {
+    font-size: 1.1em;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+}
+
+.btn-success {
+    background: linear-gradient(45deg, #28a745, #1e7e34);
+    color: white;
+}
+
+.btn-home {
+    background: linear-gradient(45deg, #6c757d, #495057);
+    color: white;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Tabla y contenedor responsive */
+.table-responsive {
+    margin: 0;
+    padding: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    background: var(--background-light);
+    border-radius: var(--border-radius);
+}
+
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 0;
+}
+
+.table th {
+    background: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    text-align: left;
+    padding: 1rem;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    color: #000000;
+    font-weight: 500;
+    background-color: rgba(255, 255, 255, 0.9);
+}
+
+/* Mejoras para las celdas de tiempo */
+.table td i {
+    margin-right: 0.75rem;
+    width: 16px;
+    text-align: center;
+    color: #333333;
+}
+
+/* Mejoras para días no laborales */
+td .dia-no-laboral {
+    display: inline-block;
+    background-color: #fff3cd;
+    color: #856404;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border-left: 3px solid #ffc107;
+    font-size: 0.9rem;
+}
+
+/* Estados con mejor contraste */
+.estado-autorizado, 
+.status-select option[value="AUTORIZADO"],
+select option[value="AUTORIZADO"] {
+    background-color: #28a745 !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    text-align: center !important;
+}
+
+.estado-pendiente,
+.status-select option[value="PENDIENTE"],
+select option[value="PENDIENTE"] {
+    background-color: #ffc107 !important;
+    color: #333 !important;
+    font-weight: 600 !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    text-align: center !important;
+}
+
+.estado-rechazado,
+.status-select option[value="RECHAZADO"],
+select option[value="RECHAZADO"] {
+    background-color: #dc3545 !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    text-align: center !important;
+}
+
+/* Colores para filas alternadas para mejor visualización */
+.table tr:nth-child(even) {
+    background-color: rgba(241, 245, 249, 0.95);
+}
+
+.table tr:nth-child(odd) {
+    background-color: rgba(255, 255, 255, 0.95);
+}
+
+/* Mejoras para los selectores de estado */
+select.estado-selector {
+    display: block;
+    width: 100%;
+    padding: 8px 10px;
+    font-weight: 600;
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+    background-color: white;
+    text-align: center;
+}
+
+/* Estado y alertas en la tabla */
+.status-select {
+    background: linear-gradient(135deg, var(--primary-color), #4d6aff);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 0.5rem 2rem 0.5rem 1rem;
+    min-width: 120px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    box-shadow: 0 3px 10px rgba(0, 123, 255, 0.15);
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+}
+
+.status-select:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 123, 255, 0.25);
+}
+
+/* Contenedor de horas extras */
+.hours-container {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(0, 123, 255, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    margin-left: 1rem;
+    white-space: nowrap;
+}
+
+.hours-container i {
+    color: var(--primary-color);
+}
+
+/* Alertas en la tabla */
+.alert-row {
+    background-color: var(--alert-warning-bg);
+}
+
+.alert-row td {
+    color: var(--warning-color) !important;
+}
+
+.alert-text {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    color: #000000;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin: 0.35rem 0;
+    background-color: rgba(0, 123, 255, 0.05);
+    border-left: 3px solid var(--primary-color);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+}
+
+.alert-text i {
+    color: var(--primary-color);
+    margin-right: 0.75rem;
+    font-size: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .table th,
+    .table td {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .container {
+        padding: 0.5rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.6rem;
+    }
+    
+    .hours-container {
+        padding: 0.4rem 0.8rem;
+        margin-left: 0.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .table {
+        font-size: 0.9rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem;
+    }
+    
+    .status-select {
+        min-width: 100px;
+        padding: 0.4rem;
+    }
+    
+    .hours-container {
+        padding: 0.3rem 0.6rem;
+        margin-left: 0.5rem;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .container {
+        padding: 0.25rem;
+    }
+    
+    .table {
+        font-size: 0.85rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.4rem;
+    }
+    
+    .status-select {
+        min-width: 90px;
+        font-size: 0.85rem;
+    }
+    
+    .hours-container {
+        padding: 0.25rem 0.5rem;
+        margin-left: 0.4rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Estilos para filas alternadas */
+.table tr:nth-child(even) {
+    background: rgba(230, 230, 250, 0.3);
+}
+
+.table tr:nth-child(odd) {
+    background: white;
+}
+
+.table tr:hover {
+    background: rgba(67, 97, 238, 0.1);
+}
+
+/* Mejoras visuales para los iconos */
+.table i[class*="fas"],
+.table i[class*="far"] {
+    color: var(--primary-color);
+}
+
+.table i.fa-moon {
+    color: var(--warning-color);
+}
+
+.table i.fa-exclamation-triangle {
+    color: var(--danger-color);
+}
+
+/* Scroll personalizado */
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: var(--background-dark);
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-color);
+}
+
+/* Estilos para los totales */
+.totals-row td {
+    background: rgba(0, 123, 255, 0.1);
+    font-weight: bold;
+}
+
+.grand-total-row td {
+    background: rgba(0, 123, 255, 0.2);
+    font-weight: bold;
+    border-top: 2px solid var(--primary-color);
+}
+
+/* Mejoras para la visualización de horas */
+.hours-display {
+    font-family: 'Consolas', monospace;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+/* Estados de los registros */
+.status-select option[value="AUTORIZADO"] {
+    color: var(--success-color);
+}
+
+.status-select option[value="RECHAZADO"] {
+    color: var(--danger-color);
+}
+
+.status-select option[value="PENDIENTE"] {
+    color: var(--warning-color);
+}
+
+/* Totales y resumen */
+.table tfoot tr td {
+    font-weight: 600;
+    color: var(--primary-color);
+    border-top: 2px solid var(--primary-color);
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.table, #resumen-container, .form-group {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Mejoras para dispositivos táctiles */
+@media (hover: none) {
+    .btn:hover {
+        transform: none;
+    }
+
+    .table tbody tr:hover {
+        background-color: transparent;
+    }
+}
+
+/* Mejoras para pantallas de alta densidad */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .btn, .form-control, .table {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
+
+/* Estilos para campos de edición de tiempo */
+.time-edit-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--border-radius);
+    margin: 0.25rem 0;
+}
+
+.time-input {
+    background: var(--background-dark);
+    border: 1px solid var(--secondary-color);
+    color: var(--text-primary);
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'Consolas', monospace;
+    width: 80px;
+    text-align: center;
+}
+
+.time-input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.time-edit-buttons {
+    display: flex;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+}
+
+.time-edit-btn {
+    background: var(--background-dark);
+    border: 1px solid var(--secondary-color);
+    color: var(--text-primary);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all var(--transition-speed);
+}
+
+.time-edit-btn:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.time-edit-btn.save {
+    background: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.time-edit-btn.cancel {
+    background: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+/* Estilos para el modo de edición */
+.edit-mode {
+    background: rgba(0, 123, 255, 0.1);
+}
+
+.edit-mode td {
+    color: var(--primary-color) !important;
+}
+
+/* Estilos para el selector de marcas */
+.marks-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--border-radius);
+    margin: 0.25rem 0;
+}
+
+.marks-list {
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--background-dark);
+    border: 1px solid var(--secondary-color);
+    border-radius: 4px;
+    padding: 0.5rem;
+}
+
+.mark-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color var(--transition-speed);
+}
+
+.mark-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.mark-item.selected {
+    background: var(--primary-color);
+    color: white;
+}
+
+.mark-item i {
+    width: 16px;
+    text-align: center;
+}
+
+.mark-item .mark-time {
+    font-family: 'Consolas', monospace;
+    margin-left: auto;
+}
+
+/* Botones de acción */
+.time-edit-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.time-edit-btn {
+    padding: 0.3rem 0.6rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.9rem;
+    transition: all var(--transition-speed);
+}
+
+.time-edit-btn.manual {
+    background: var(--primary-color);
+    color: white;
+}
+
+.time-edit-btn.marks {
+    background: var(--success-color);
+    color: white;
+}
+
+.time-edit-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* Estilos para el contenedor de edición */
+.time-edit-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--border-radius);
+    margin: 0.25rem 0;
+}
+
+.time-input {
+    background: var(--background-dark);
+    border: 1px solid var(--secondary-color);
+    color: var(--text-primary);
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'Consolas', monospace;
+    width: 100%;
+    text-align: center;
+}
+
+.time-input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Estilo para botones de edición en las tablas */
+.table .action-btn,
+.table .edit-btn,
+.table button[class*="edit"],
+.table button i.fa-edit,
+.table button i.fas.fa-edit {
+    background: linear-gradient(135deg, var(--primary-color), #4d6aff);
+    color: white;
+    border: none;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50%;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    box-shadow: 0 3px 10px rgba(0, 123, 255, 0.15);
+    padding: 0 !important;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+    min-width: 36px;
+}
+
+.table .action-btn i,
+.table .edit-btn i,
+.table button[class*="edit"] i {
+    font-size: 1rem;
+    display: inline-block;
+}
+
+.table .action-btn:hover,
+.table .edit-btn:hover,
+.table button[class*="edit"]:hover {
+    background: linear-gradient(135deg, #4d6aff, var(--primary-color));
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 5px 15px rgba(0, 123, 255, 0.25);
+}
